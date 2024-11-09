@@ -1,235 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Custom Chat with Fun Features</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      color: #333;
-      margin: 20px;
-      overflow: hidden;
-      transition: background-color 0.5s, color 0.5s;
-    }
-    #chat {
-      border: 1px solid #ccc;
-      padding: 10px;
-      height: 300px;
-      overflow-y: scroll;
-      margin-bottom: 10px;
-    }
-    .dark-mode {
-      background-color: #121212;
-      color: #ffffff;
-    }
-    .emoji-buttons, .extra-buttons {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .imposter {
-      position: absolute;
-      width: 50px;
-      animation: dance 1s infinite alternate;
-    }
-    @keyframes dance {
-      from { transform: translateY(0); }
-      to { transform: translateY(-20px); }
-    }
-  </style>
+  <title>ABBA-Chat</title>
 </head>
 <body>
-  <h1>Chat with Fun Features</h1>
-  <button id="toggle-dark-mode">Toggle Dark Mode</button>
-  <button id="toggle-mood-music">Toggle Mood Music</button>
-  <div class="emoji-buttons">
-    <button class="emoji" data-emoji="😊">😊</button>
-    <button class="emoji" data-emoji="😂">😂</button>
-    <button class="emoji" data-emoji="❤️">❤️</button>
+  <h1>Welcome to ABBA-Chat</h1>
+  <div id="chat">
+    <!-- Chat messages will appear here -->
   </div>
-  <div class="extra-buttons">
-    <button id="do-not-click">Do Not Click</button>
-    <button id="you-cant-click-me">You Can't Click Me</button>
-  </div>
-  <input id="username" type="text" placeholder="Enter your username">
-  <button id="set-username">Set Username</button>
-  <div id="chat"></div>
-  <input id="message" type="text" placeholder="Type a message..." disabled>
-  <button id="send" disabled>Send</button>
-  <audio id="mood-music" loop>
-    <source src="C:/Users/ayaan/OneDrive/Desktop/Projects/realtime-chat/music/Lukrembo - Chocolate (freetouse.com).mp3" type="audio/mpeg">
-  </audio>
+  <input id="username" placeholder="Enter username" />
+  <input id="message" placeholder="Enter message" />
+  <button onclick="sendMessage()">Send</button>
 
   <script>
-    // Chat variables
-    const chat = document.getElementById('chat');
-    const messageInput = document.getElementById('message');
-    const sendButton = document.getElementById('send');
-    const usernameInput = document.getElementById('username');
-    const setUsernameButton = document.getElementById('set-username');
-    const toggleDarkModeButton = document.getElementById('toggle-dark-mode');
-    const toggleMoodMusicButton = document.getElementById('toggle-mood-music');
-    const emojiButtons = document.querySelectorAll('.emoji');
-    const doNotClickButton = document.getElementById('do-not-click');
-    const youCantClickMeButton = document.getElementById('you-cant-click-me');
-    const moodMusic = document.getElementById('mood-music');
-    let currentUsername = '';
     const socket = new WebSocket('ws://localhost:8080');
 
+    socket.onopen = () => {
+      console.log('Connected to server');
+    };
 
-
-    // Set the imposter image path
-    const imposterImagePath = "C:/Users/ayaan/OneDrive/Desktop/Projects/realtime-chat/images/imposter.png";  // Make sure this path is correct
-
-    // Array of riddles
-    const riddles = [
-      { question: "What has keys but can't open locks?", answer: "A piano" },
-      { question: "What comes once in a minute, twice in a moment, but never in a thousand years?", answer: "The letter M" },
-      { question: "I’m tall when I’m young, and I’m short when I’m old. What am I?", answer: "A candle" }
-    ];
-
-    // Array of meme URLs
-    const memes = [
-      "https://i.imgflip.com/1bij.jpg",
-      "https://i.imgflip.com/26am.jpg",
-      "https://i.imgflip.com/2cp1.jpg"
-    ];
-
-    // Set Username
-    setUsernameButton.addEventListener('click', () => {
-      const username = usernameInput.value.trim();
-      if (username) {
-        currentUsername = username;
-        socket.send(JSON.stringify({ type: 'setUsername', username }));
-        messageInput.disabled = false;
-        sendButton.disabled = false;
-      } else {
-        alert('Please enter a valid username!');
-      }
-    });
-
-    // Handle commands
-    function voteKick(playerName) {
-      displayMessage("System", `A vote to kick ${playerName} has started! Type "yes" or "no" to vote.`);
-      setTimeout(() => {
-        displayMessage("System", `The vote to kick ${playerName} has failed. ${playerName} stays!`);
-      }, 5000);
-    }
-
-    function sendRiddle() {
-      const randomRiddle = riddles[Math.floor(Math.random() * riddles.length)];
-      displayMessage("Riddle Bot", randomRiddle.question);
-    }
-
-    function sendHighFive() {
-      displayMessage(currentUsername, "gave a virtual high-five! ✋");
-    }
-
-    function sendMeme() {
-      const randomMeme = memes[Math.floor(Math.random() * memes.length)];
-      displayMessage("Meme Bot", "Here's a meme: " + randomMeme);
-    }
-
-    // Handle special phrases like "sussy" and "imposter"
-    function handleImposterDance(message) {
-      const imposterKeywords = ["sus", "sussy", "sussy baka", "imposter", "crewmate", "amongus"];
-      if (imposterKeywords.some(keyword => message.toLowerCase().includes(keyword))) {
-        displayMessage("System", "🚨 An imposter has been spotted! 🚨");
-
-        // Add imposter image to the chat area
-        for (let i = 0; i < 4; i++) {
-          const imposter = document.createElement('img');
-          imposter.src = imposterImagePath;
-          imposter.className = 'imposter';
-          imposter.style.top = `${Math.random() * window.innerHeight}px`;
-          imposter.style.left = `${Math.random() * window.innerWidth}px`;
-          document.body.appendChild(imposter);
-
-          // Remove after 5 seconds
-          setTimeout(() => imposter.remove(), 5000);
-        }
-      }
-    }
-
-    // Send Button Listener to Handle Commands
-    sendButton.addEventListener('click', () => {
-      const message = messageInput.value.trim();
-
-      if (message.startsWith("/votekick ")) {
-        const playerName = message.split(" ")[1];
-        voteKick(playerName);
-      } else if (message === "/riddle") {
-        sendRiddle();
-      } else if (message === "/highfive") {
-        sendHighFive();
-      } else if (message === "/meme") {
-        sendMeme();
-      } else {
-        socket.send(JSON.stringify({
-          type: 'message',
-          username: currentUsername,
-          text: message
-        }));
-        displayMessage(currentUsername, message);
-        handleImposterDance(message);
-      }
-      messageInput.value = '';
-    });
-
-    // Receiving messages from the server
-    socket.addEventListener('message', (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'message') {
-        displayMessage(data.username, data.text);
-        handleImposterDance(data.text);
-      }
-    });
-
-    // Toggle Dark Mode
-    toggleDarkModeButton.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-    });
-
-    // Toggle Mood Music
-    toggleMoodMusicButton.addEventListener('click', () => {
-      if (moodMusic.paused) {
-        moodMusic.play();
-      } else {
-        moodMusic.pause();
-      }
-    });
-
-    // Emoji Reaction Buttons
-    emojiButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        const emoji = button.getAttribute('data-emoji');
-        displayMessage(currentUsername, `reacted with ${emoji}`);
-      });
-    });
-
-    // "Do Not Click" Button
-    doNotClickButton.addEventListener('click', () => {
-      window.open('https://youtu.be/dQw4w9WgXcQ?si=Pm21FZjpHLao70Tc', '_blank');
-    });
-
-    // "You Can't Click Me" Button - moves around and shows a popup if clicked
-    youCantClickMeButton.addEventListener('mouseover', () => {
-      youCantClickMeButton.style.position = 'absolute';
-      youCantClickMeButton.style.top = `${Math.random() * window.innerHeight}px`;
-      youCantClickMeButton.style.left = `${Math.random() * window.innerWidth}px`;
-    });
-
-    youCantClickMeButton.addEventListener('click', () => {
-      alert("Wow, are you happy now?");
-      youCantClickMeButton.style.display = 'none';
-    });
-
-    // Display message function
-    function displayMessage(username, message) {
+    socket.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      const chat = document.getElementById('chat');
       const messageElement = document.createElement('div');
-      messageElement.textContent = `${username}: ${message}`;
+      messageElement.innerText = `${msg.username}: ${msg.text}`;
       chat.appendChild(messageElement);
-      chat.scrollTop = chat.scrollHeight;
+    };
+
+    function sendMessage() {
+      const username = document.getElementById('username').value;
+      const message = document.getElementById('message').value;
+
+      socket.send(JSON.stringify({
+        type: 'setUsername',
+        username: username,
+        text: message
+      }));
+
+      socket.send(JSON.stringify({
+        type: 'message',
+        username: username,
+        text: message
+      }));
     }
   </script>
 </body>

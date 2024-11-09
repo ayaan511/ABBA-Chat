@@ -1,6 +1,7 @@
 const WebSocket = require('ws');
 const express = require('express');
 const http = require('http');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -8,8 +9,10 @@ const wss = new WebSocket.Server({ server });
 
 let users = {}; // To keep track of connected users and their WebSocket connections
 
-// Serve static files from the current directory
-app.use(express.static(__dirname));
+// Serve index.html on root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // Handle WebSocket connections
 wss.on('connection', (ws) => {
@@ -55,7 +58,9 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Start the server on port 8080
-server.listen(8080, () => {
-  console.log('Server is listening on http://localhost:8080');
+// Start the server on the appropriate port
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
 });
+
